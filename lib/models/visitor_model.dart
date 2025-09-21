@@ -14,10 +14,18 @@ class Visitor {
   final DateTime checkIn;
   final DateTime? checkOut;
   final String? meetingNotes;
-  final String status; // 'pending', 'approved', 'rejected', 'completed'
+  final String status; // 'pending', 'approved', 'rejected', 'completed', 'checkout-requested'
   final String? qrCode; // permanent unique QR code for registered visitors
   final bool isRegistered; // indicates if this is a registered visitor
   final List<Map<String, dynamic>>? visitHistory; // list of previous visits
+  final bool? checkoutRequested;
+  final bool? checkoutApproved;
+  final bool? checkoutRejected;
+  final String? checkoutNotes;
+  final String? checkoutRejectionReason;
+  final DateTime? checkoutRequestedAt;
+  final DateTime? checkoutApprovedAt;
+  final DateTime? checkoutRejectedAt;
 
   Visitor({
     this.id,
@@ -37,6 +45,14 @@ class Visitor {
     this.qrCode,
     this.isRegistered = false,
     this.visitHistory,
+    this.checkoutRequested = false,
+    this.checkoutApproved = false,
+    this.checkoutRejected = false,
+    this.checkoutNotes,
+    this.checkoutRejectionReason,
+    this.checkoutRequestedAt,
+    this.checkoutApprovedAt,
+    this.checkoutRejectedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -57,6 +73,14 @@ class Visitor {
       'qrCode': qrCode,
       'isRegistered': isRegistered,
       'visitHistory': visitHistory,
+      'checkoutRequested': checkoutRequested,
+      'checkoutApproved': checkoutApproved,
+      'checkoutRejected': checkoutRejected,
+      'checkoutNotes': checkoutNotes,
+      'checkoutRejectionReason': checkoutRejectionReason,
+      'checkoutRequestedAt': checkoutRequestedAt,
+      'checkoutApprovedAt': checkoutApprovedAt,
+      'checkoutRejectedAt': checkoutRejectedAt,
     };
   }
 
@@ -86,6 +110,20 @@ class Visitor {
       isRegistered: map['isRegistered'] ?? false,
       visitHistory: map['visitHistory'] != null 
           ? List<Map<String, dynamic>>.from(map['visitHistory'])
+          : null,
+      checkoutRequested: map['checkoutRequested'] ?? false,
+      checkoutApproved: map['checkoutApproved'] ?? false,
+      checkoutRejected: map['checkoutRejected'] ?? false,
+      checkoutNotes: map['checkoutNotes'],
+      checkoutRejectionReason: map['checkoutRejectionReason'],
+      checkoutRequestedAt: map['checkoutRequestedAt'] != null
+          ? (map['checkoutRequestedAt'] as Timestamp).toDate()
+          : null,
+      checkoutApprovedAt: map['checkoutApprovedAt'] != null
+          ? (map['checkoutApprovedAt'] as Timestamp).toDate()
+          : null,
+      checkoutRejectedAt: map['checkoutRejectedAt'] != null
+          ? (map['checkoutRejectedAt'] as Timestamp).toDate()
           : null,
     );
   }

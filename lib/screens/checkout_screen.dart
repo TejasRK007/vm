@@ -89,12 +89,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         return;
       }
 
-      await _firebaseServices.checkOutVisitor(visitor.id!, _notesController.text);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Visitor checked out successfully'), backgroundColor: Colors.green[700]),
-      );
-      _notesController.clear();
-      Navigator.pop(context);
+      // Check if user is admin or receptionist
+      final role = Provider.of<AuthService>(context, listen: false).role ?? 'admin';
+      
+      if (role == 'admin' || role == 'receptionist') {
+        // Admin/Receptionist can directly check out
+        await _firebaseServices.checkOutVisitor(visitor.id!, _notesController.text);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Visitor checked out successfully'), backgroundColor: Colors.green[700]),
+        );
+        _notesController.clear();
+        Navigator.pop(context);
+      } else {
+        // Other roles need admin approval
+        await _firebaseServices.requestCheckout(visitor.id!, _notesController.text);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Checkout request sent to admin for approval'),
+            backgroundColor: Colors.blue[700],
+            duration: Duration(seconds: 3),
+          ),
+        );
+        _notesController.clear();
+        Navigator.pop(context);
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red[700]),

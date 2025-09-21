@@ -214,6 +214,84 @@ class FirebaseServices {
     }
   }
 
+  Future<void> requestCheckout(String visitorId, String? notes) async {
+    try {
+      await _firestore.collection('visitors').doc(visitorId).update({
+        'checkoutRequested': true,
+        'checkoutNotes': notes,
+        'checkoutRequestedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Send notification to admin
+      await _firestore.collection('notifications').add({
+        'type': 'checkout_request',
+        'visitorId': visitorId,
+        'message': 'Checkout request for visitor',
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to request checkout: $e');
+    }
+  }
+
+  Future<void> approveCheckout(String visitorId, String? meetingNotes) async {
+    try {
+      final visitorDoc = await _firestore.collection('visitors').doc(visitorId).get();
+      final visitorData = visitorDoc.data();
+      final checkOutTime = FieldValue.serverTimestamp();
+      
+      if (visitorData != null && visitorData['isRegistered'] == true) {
+        // For registered visitors, update the current visit in history
+        List<Map<String, dynamic>> history = visitorData['visitHistory'] != null 
+            ? List.from(visitorData['visitHistory'])
+            : [];
+            
+        if (history.isNotEmpty) {
+          // Update the most recent visit
+          history.last['checkOut'] = checkOutTime;
+          history.last['status'] = 'completed';
+          history.last['meetingNotes'] = meetingNotes;
+        }
+        
+        await _firestore.collection('visitors').doc(visitorId).update({
+          'checkOut': checkOutTime,
+          'status': 'completed',
+          'meetingNotes': meetingNotes,
+          'visitHistory': history,
+          'checkoutRequested': false,
+          'checkoutApproved': true,
+          'checkoutApprovedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // For non-registered visitors
+        await _firestore.collection('visitors').doc(visitorId).update({
+          'checkOut': checkOutTime,
+          'status': 'completed',
+          'meetingNotes': meetingNotes,
+          'checkoutRequested': false,
+          'checkoutApproved': true,
+          'checkoutApprovedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      throw Exception('Failed to approve checkout: $e');
+    }
+  }
+
+  Future<void> rejectCheckout(String visitorId, String? reason) async {
+    try {
+      await _firestore.collection('visitors').doc(visitorId).update({
+        'checkoutRequested': false,
+        'checkoutRejected': true,
+        'checkoutRejectionReason': reason,
+        'checkoutRejectedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to reject checkout: $e');
+    }
+  }
+
   Future<void> checkOutVisitor(String visitorId, String? meetingNotes) async {
     try {
       // Get the visitor document
@@ -354,6 +432,18 @@ class FirebaseServices {
     } catch (e) {
       throw Exception('Failed to fetch visitor by QR code: $e');
     }
+  }
+
+  // Get all checkout requests
+  Stream<List<Visitor>> getCheckoutRequests() {
+    return _firestore
+        .collection('visitors')
+        .where('checkoutRequested', isEqualTo: true)
+        .orderBy('checkoutRequestedAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Visitor.fromMap(doc.data(), doc.id))
+            .toList());
   }
 
   // Image Upload

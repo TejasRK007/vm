@@ -19,6 +19,7 @@ import '../services/notification_service.dart';
 import '../services/visitor_service.dart';
 import 'pre_register_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'checkout_requests_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -158,6 +159,13 @@ class DashboardScreen extends StatelessWidget {
                 'Pre-register',
                 const PreRegisterScreen(),
               ),
+            if (role == 'admin')
+              _buildDashboardItem(
+                context,
+                Icons.exit_to_app,
+                'Checkout Requests',
+                const CheckoutRequestsScreen(),
+              ),
             if (role == 'admin' || role == 'receptionist')
               _buildDashboardItem(
                 context,
@@ -186,7 +194,7 @@ class DashboardScreen extends StatelessWidget {
               'Check-out',
               const CheckoutScreen(),
             ),
-            if (role == 'guard' || role == 'admin')
+            if (role == 'guard')
               _buildDashboardItem(
                 context,
                 Icons.qr_code_scanner,

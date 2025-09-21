@@ -4,6 +4,7 @@ import '../models/visitor_model.dart';
 import '../services/visitor_service.dart';
 import 'checkout_screen.dart';
 import '../widgets/qr_code_widget.dart';
+import 'package:provider/provider.dart';
 
 class VisitorDetailsScreen extends StatelessWidget {
   final Visitor visitor;
@@ -14,28 +15,34 @@ class VisitorDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String qrData = visitor.qrCode ?? visitor.id ?? '';
+    final bool isAdmin = Provider.of<AuthService>(context, listen: false).role == 'admin';
+    final bool isReceptionist = Provider.of<AuthService>(context, listen: false).role == 'receptionist';
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text('Visitor Details'),
+        title: const Text('Visitor Details'),
         backgroundColor: Colors.black,
         elevation: 0,
         actions: [
           if (qrData.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.qr_code),
+              icon: const Icon(Icons.qr_code, size: 24),
               tooltip: 'Show QR',
               onPressed: () => _showQrDialog(context, qrData),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-          if (visitor.status == 'pending')
+          if (visitor.status == 'pending' && (isAdmin || isReceptionist))
             IconButton(
-              icon: Icon(Icons.check, color: Colors.green[300]),
+              icon: Icon(Icons.check, color: Colors.green[300], size: 24),
               onPressed: () => _approveVisitor(context),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-          if (visitor.status == 'pending')
+          if (visitor.status == 'pending' && (isAdmin || isReceptionist))
             IconButton(
-              icon: Icon(Icons.close, color: Colors.red[300]),
+              icon: Icon(Icons.close, color: Colors.red[300], size: 24),
               onPressed: () => _rejectVisitor(context),
+              padding: const EdgeInsets.only(right: 12, left: 0),
             ),
         ],
       ),
@@ -158,6 +165,181 @@ class VisitorDetailsScreen extends StatelessWidget {
                 ]),
               ],
 
+              // Show checkout request status if applicable
+              if (visitor.checkoutRequested == true) ...[
+                const SizedBox(height: 16),
+                _buildSection('Checkout Status', [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[900]!.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue[700]!),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.pending_actions, color: Colors.blue, size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Checkout Requested',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (visitor.checkoutRequestedAt != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    'Requested: ${DateFormat('MMM d, y HH:mm').format(visitor.checkoutRequestedAt!)}',
+                                    style: const TextStyle(color: Colors.blue, fontSize: 12, height: 1.2),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (isAdmin || isReceptionist) ...[
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: () => _approveCheckout(context, visitor),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('Approve', 
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          TextButton(
+                            onPressed: () => _rejectCheckout(context, visitor),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('Reject',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ]),
+              ],
+
+              if (visitor.checkoutApproved == true) ...[
+                const SizedBox(height: 16),
+                _buildSection('Checkout Status', [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green[900]!.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green[700]!),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.green, size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Checkout Approved',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (visitor.checkoutApprovedAt != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    'Approved: ${DateFormat('MMM d, y HH:mm').format(visitor.checkoutApprovedAt!)}',
+                                    style: const TextStyle(color: Colors.green, fontSize: 12, height: 1.2),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
+              ],
+
+              if (visitor.checkoutRejected == true) ...[
+                const SizedBox(height: 16),
+                _buildSection('Checkout Status', [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red[900]!.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red[700]!),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2),
+                          child: Icon(Icons.cancel, color: Colors.red, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Checkout Rejected',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (visitor.checkoutRejectedAt != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    'Rejected: ${DateFormat('MMM d, y HH:mm').format(visitor.checkoutRejectedAt!)}',
+                                    style: const TextStyle(color: Colors.red, fontSize: 12, height: 1.3),
+                                  ),
+                                ),
+                              if (visitor.checkoutRejectionReason?.isNotEmpty ?? false)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    'Reason: ${visitor.checkoutRejectionReason}',
+                                    style: const TextStyle(color: Colors.red, fontSize: 12, height: 1.3),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
+              ],
               const SizedBox(height: 20),
 
               // Action buttons
@@ -317,7 +499,7 @@ class VisitorDetailsScreen extends StatelessWidget {
     final duration = checkOut.difference(checkIn);
     final hours = duration.inHours;
     final minutes = duration.inMinutes % 60;
-    
+
     if (hours > 0) {
       return '$hours hours $minutes minutes';
     } else {
@@ -373,5 +555,80 @@ class VisitorDetailsScreen extends StatelessWidget {
         onDone: () => Navigator.of(ctx).pop(),
       ),
     );
+  }
+
+  Future<void> _approveCheckout(BuildContext context, Visitor visitor) async {
+    try {
+      await FirebaseServices().approveCheckout(visitor.id!, null);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Checkout approved'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to approve checkout: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _rejectCheckout(BuildContext context, Visitor visitor) async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rejection Reason'),
+        content: TextField(
+          decoration: const InputDecoration(
+            hintText: 'Enter the reason for rejection...',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final reason = (context as Element).findRenderObject() as TextField;
+              Navigator.pop(context, reason.controller?.text ?? '');
+            },
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+
+    if (reason != null) {
+      try {
+        await FirebaseServices().rejectCheckout(visitor.id!, reason);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Checkout rejected'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to reject checkout: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 }
