@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/visitor_service.dart';
-import '../models/visitor_model.dart';
 import 'package:intl/intl.dart';
+import '../services/visitor_service.dart';
+import '../services/auth_service.dart';
+import '../models/visitor_model.dart';
 
 class CheckoutRequestsScreen extends StatelessWidget {
   const CheckoutRequestsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final FirebaseServices _firebaseServices = FirebaseServices();
-    final auth = Provider.of<AuthService>(context);
+    final FirebaseServices firebaseServices = FirebaseServices();
+    final auth = Provider.of<AuthService>(context, listen: false);
     final role = auth.role ?? 'admin';
 
     return Scaffold(
@@ -29,7 +30,7 @@ class CheckoutRequestsScreen extends StatelessWidget {
           ),
         ),
         child: StreamBuilder<List<Visitor>>(
-          stream: _firebaseServices.getCheckoutRequests(),
+          stream: firebaseServices.getCheckoutRequests(),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(
